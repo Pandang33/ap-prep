@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP Prep Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0b0c0f;
+  --surface: #13151a;
+  --surface2: #1c1f27;
+  --surface3: #252932;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f1f5;
+  --text2: #8b90a0;
+  --text3: #555c6e;
+  --accent-blue: #4f8ef7;
+  --accent-blue-dim: rgba(79,142,247,0.15);
+  --accent-green: #3ecf8e;
+  --accent-green-dim: rgba(62,207,142,0.12);
+  --accent-amber: #f0a429;
+  --accent-amber-dim: rgba(240,164,41,0.12);
+  --accent-red: #f2545b;
+  --accent-red-dim: rgba(242,84,91,0.12);
+  --accent-purple: #9b72f7;
+  --accent-purple-dim: rgba(155,114,247,0.12);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.5}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+
+/* LAYOUT */
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0}
+.main{flex:1;overflow-y:auto;padding:28px 32px}
+
+/* SIDEBAR */
+.logo{padding:22px 20px 16px;border-bottom:1px solid var(--border)}
+.logo-text{font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:-0.02em;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--font-mono)}
+.course-section{padding:16px 12px 8px}
+.course-label{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;padding:0 8px}
+.course-btn{width:100%;text-align:left;padding:9px 12px;background:none;border:none;border-radius:var(--radius-sm);color:var(--text2);font-family:var(--font-body);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.15s}
+.course-btn:hover{background:var(--surface2);color:var(--text)}
+.course-btn.active{background:var(--accent-blue-dim);color:var(--accent-blue)}
+.course-btn .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.nav-section{padding:8px 12px;flex:1}
+.nav-label{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;padding:0 8px}
+.nav-btn{width:100%;text-align:left;padding:8px 12px;background:none;border:none;border-radius:var(--radius-sm);color:var(--text2);font-family:var(--font-body);font-size:13px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:10px}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{background:var(--surface2);color:var(--text)}
+.nav-btn svg{opacity:0.5;flex-shrink:0}
+.nav-btn.active svg{opacity:1}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.days-left{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+.days-num{font-size:22px;font-weight:500;color:var(--accent-amber);font-family:var(--font-display);display:block;line-height:1.2}
+
+/* PANELS */
+.panel{display:none}.panel.active{display:block}
+.page-title{font-family:var(--font-display);font-size:26px;font-weight:700;letter-spacing:-0.03em;margin-bottom:6px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:24px}
+
+/* METRIC GRID */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.metric-card .mc-label{font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.04em;margin-bottom:8px}
+.metric-card .mc-val{font-size:30px;font-weight:700;font-family:var(--font-display);line-height:1}
+.metric-card .mc-sub{font-size:11px;color:var(--text2);margin-top:6px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;font-family:var(--font-mono);margin-bottom:14px}
+
+/* GRID LAYOUTS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* UNIT ROWS */
+.unit-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.unit-row:last-child{border-bottom:none}
+.unit-name{font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog-bar{height:4px;background:var(--surface3);border-radius:2px;flex:1;max-width:100px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width 0.5s}
+.unit-pct{font-size:11px;color:var(--text2);min-width:32px;text-align:right;font-family:var(--font-mono)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:500;padding:2px 7px;border-radius:4px;font-family:var(--font-mono);white-space:nowrap}
+.badge-green{background:var(--accent-green-dim);color:var(--accent-green)}
+.badge-blue{background:var(--accent-blue-dim);color:var(--accent-blue)}
+.badge-amber{background:var(--accent-amber-dim);color:var(--accent-amber)}
+.badge-red{background:var(--accent-red-dim);color:var(--accent-red)}
+.badge-purple{background:var(--accent-purple-dim);color:var(--accent-purple)}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.form-group label{display:block;font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:5px}
+select,input[type=text],input[type=number],input[type=date]{width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body);font-size:13px;outline:none;transition:border 0.15s}
+select:focus,input:focus{border-color:var(--accent-blue)}
+select option{background:var(--surface2)}
+.btn{padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all 0.15s}
+.btn:hover{background:var(--surface3)}
+.btn-primary{background:var(--accent-blue);border-color:var(--accent-blue);color:#fff}
+.btn-primary:hover{opacity:0.88}
+.btn-full{width:100%}
+
+/* ENTRY LIST */
+.entry-list{max-height:300px;overflow-y:auto}
+.entry-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.entry-row:last-child{border-bottom:none}
+.entry-date{color:var(--text3);min-width:50px;font-family:var(--font-mono);font-size:11px}
+.entry-unit{flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry-topic{color:var(--text3);font-size:11px;min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;line-height:1}
+.del-btn:hover{color:var(--accent-red)}
+
+/* CALENDAR */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px}
+.cal-day{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;min-height:90px}
+.cal-day-hdr{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px}
+.cal-task{padding:3px 7px;border-radius:3px;font-size:10px;margin-bottom:3px;line-height:1.4}
+.task-review{background:var(--accent-blue-dim);color:var(--accent-blue)}
+.task-frq{background:var(--accent-purple-dim);color:var(--accent-purple)}
+.task-drill{background:var(--accent-green-dim);color:var(--accent-green)}
+.task-test{background:var(--accent-amber-dim);color:var(--accent-amber)}
+.cal-weekend{border-color:var(--accent-amber);border-opacity:0.3}
+
+/* WHAT-IF */
+.whatif-result{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px}
+.wi-arrow{font-size:24px;color:var(--text3);align-self:center}
+
+/* GAP VIZ */
+.gap-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;margin:10px 0}
+.gap-seg-curr{border-radius:4px;background:var(--accent-blue)}
+.gap-seg-gap{border-radius:4px;background:var(--accent-amber)}
+.gap-seg-rest{flex:1;border-radius:4px;background:var(--surface3)}
+
+/* SCORE BANDS TABLE */
+.bands-table{width:100%;font-size:12px;border-collapse:collapse}
+.bands-table td,.bands-table th{padding:7px 10px;border-bottom:1px solid var(--border)}
+.bands-table th{font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:400;letter-spacing:0.04em}
+.bands-table tr:last-child td{border-bottom:none}
+
+/* FRQ SKILL CARDS */
+.frq-skill-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center}
+.frq-skill-name{font-size:10px;color:var(--text3);margin-bottom:6px;line-height:1.3}
+.frq-skill-val{font-size:22px;font-weight:700;font-family:var(--font-display)}
+
+/* INFLATION WARN */
+.warn-bar{background:var(--accent-amber-dim);border:1px solid rgba(240,164,41,0.2);border-radius:var(--radius-sm);padding:9px 12px;font-size:12px;color:var(--accent-amber);margin-top:10px;display:none}
+
+/* READINESS */
+.readiness-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.readiness-row:last-child{border-bottom:none}
+
+/* EMPTY STATE */
+.empty{color:var(--text3);font-size:13px;padding:8px 0}
+
+/* SCORE BAND HIGHLIGHT */
+.band-active{background:var(--accent-blue-dim)!important}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:14px 0}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-text">AP Prep</div>
+    <div class="logo-sub">Adaptive tracker</div>
+  </div>
+  <div class="course-section">
+    <div class="course-label">Course</div>
+    <button class="course-btn active" onclick="switchCourse('physics',this)">
+      <span class="dot" style="background:#4f8ef7"></span>Physics 1
+    </button>
+    <button class="course-btn" onclick="switchCourse('stats',this)">
+      <span class="dot" style="background:#3ecf8e"></span>Statistics
+    </button>
+    <button class="course-btn" onclick="switchCourse('precalc',this)">
+      <span class="dot" style="background:#9b72f7"></span>Precalculus
+    </button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Views</div>
+    <button class="nav-btn active" onclick="showPanel('dashboard',this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn" onclick="showPanel('log',this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Log Score
+    </button>
+    <button class="nav-btn" onclick="showPanel('analytics',this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 13L6 8l3 3 5-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Analytics
+    </button>
+    <button class="nav-btn" onclick="showPanel('calendar',this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 1.5v3M11 1.5v3M1.5 7h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Calendar
+    </button>
+    <button class="nav-btn" onclick="showPanel('goals',this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1" fill="currentColor"/></svg>
+      Goals & What-If
+    </button>
+    <button class="nav-btn" onclick="showPanel('reference',this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Score Reference
+    </button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="days-left">
+      <span class="days-num" id="sidebar-days">—</span>
+      days to exam
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--font-mono)" id="sidebar-exam-date"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- DASHBOARD -->
+<div class="panel active" id="panel-dashboard">
+  <div class="page-title" id="dash-title">AP Physics 1</div>
+  <div class="page-sub" id="dash-sub">Prediction based on logged scores with source & difficulty weighting</div>
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="mc-label">PREDICTED SCORE</div>
+      <div class="mc-val" id="pred-score" style="color:var(--accent-blue)">—</div>
+      <div class="mc-sub" id="pred-pct"></div>
+    </div>
+    <div class="metric-card">
+      <div class="mc-label">CONFIDENCE</div>
+      <div class="mc-val" id="pred-conf" style="font-size:22px;padding-top:4px">—</div>
+      <div class="mc-sub" id="pred-border"></div>
+    </div>
+    <div class="metric-card">
+      <div class="mc-label">GAP TO NEXT</div>
+      <div class="mc-val" id="pred-gap" style="font-size:22px;padding-top:4px">—</div>
+      <div class="mc-sub" id="pred-gap-sub"></div>
+    </div>
+    <div class="metric-card">
+      <div class="mc-label">ENTRIES</div>
+      <div class="mc-val" id="entry-count" style="font-size:22px;padding-top:4px">0</div>
+      <div class="mc-sub">scores logged</div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Unit Mastery</div>
+      <div id="unit-mastery-list"><div class="empty">Log scores to see mastery.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Weakest Areas</div>
+      <div id="weak-areas"><div class="empty">Log scores to identify weak areas.</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">FRQ Skill Breakdown</div>
+    <div id="frq-breakdown" style="display:grid;gap:10px"><div class="empty">Log FRQ scores to see skill breakdown.</div></div>
+  </div>
+</div>
+
+<!-- LOG SCORE -->
+<div class="panel" id="panel-log">
+  <div class="page-title">Log Score</div>
+  <div class="page-sub">Add a new practice score. Source reliability is weighted into the prediction.</div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group"><label>UNIT</label><select id="inp-unit"></select></div>
+      <div class="form-group"><label>TOPIC (optional)</label><input type="text" id="inp-topic" placeholder="e.g. Newton's 2nd law"></div>
+      <div class="form-group"><label>SCORE (%)</label><input type="number" id="inp-score" min="0" max="100" placeholder="0–100"></div>
+      <div class="form-group"><label>SOURCE</label>
+        <select id="inp-source">
+          <option value="1.0">Released exam (CB) — 1.0×</option>
+          <option value="1.0">College Board practice — 1.0×</option>
+          <option value="0.9">Barron's — 0.9×</option>
+          <option value="0.85">Princeton Review — 0.85×</option>
+          <option value="0.8">Gemini / AI-generated — 0.8×</option>
+          <option value="0.75">Other — 0.75×</option>
+        </select>
+      </div>
+      <div class="form-group"><label>QUESTION TYPE</label><select id="inp-type"></select></div>
+      <div class="form-group"><label>DATE COMPLETED</label><input type="date" id="inp-date"></div>
+      <div class="form-group"><label>TIME SPENT (min, optional)</label><input type="number" id="inp-time" placeholder="e.g. 45" min="0"></div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="logScore()">+ Log Entry</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Logged Entries</div>
+    <div class="entry-list" id="entry-list"><div class="empty">No entries yet.</div></div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="panel" id="panel-analytics">
+  <div class="page-title">Analytics</div>
+  <div class="page-sub">Score trends, unit performance, and prediction trajectory.</div>
+  <div class="card">
+    <div class="card-title">Score Trend</div>
+    <canvas id="trendChart" height="120"></canvas>
+    <div class="warn-bar" id="inflation-warn">⚠ Score inflation detected — recent scores are significantly higher than earlier ones. Verify with official released materials.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Unit Performance (weighted avg)</div>
+    <div id="unit-chart"></div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div class="panel" id="panel-calendar">
+  <div class="page-title">Adaptive Calendar</div>
+  <div class="page-sub">Auto-generated study plan based on your weakest units, time until exam, and score goal.</div>
+  <div class="card">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+      <div class="form-group" style="flex:0 0 auto"><label>EXAM DATE</label><input type="date" id="examDate" style="width:160px" onchange="buildCalendar()"></div>
+      <div class="form-group" style="flex:0 0 auto"><label>TARGET SCORE</label><select id="goalSelect" style="width:80px" onchange="buildCalendar()"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option></select></div>
+    </div>
+    <div class="card-title" style="margin-bottom:8px">Next 7 Days</div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Unit Readiness</div>
+    <div id="readiness-list"><div class="empty">Log scores to see readiness.</div></div>
+  </div>
+</div>
+
+<!-- GOALS -->
+<div class="panel" id="panel-goals">
+  <div class="page-title">Goals & What-If</div>
+  <div class="page-sub">See exactly what you need to improve and model score changes.</div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Score Gap to Target</div>
+      <div class="form-group" style="margin-bottom:14px"><label>TARGET SCORE</label><select id="targetScore" style="width:80px" onchange="renderGoals()"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option></select></div>
+      <div id="goal-output"><div class="empty">Log data first.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">What-If Scenario</div>
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="form-group"><label>UNIT TO IMPROVE</label><select id="wi-unit"></select></div>
+        <div class="form-group"><label>IMPROVEMENT (%)</label><input type="number" id="wi-delta" value="10" min="1" max="50"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="runWhatIf()">Run Scenario</button>
+      <div class="whatif-result" id="wi-result" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORE REFERENCE -->
+<div class="panel" id="panel-reference">
+  <div class="page-title">Score Reference</div>
+  <div class="page-sub">Official AP score cutoffs, exam dates, and FRQ question types.</div>
+  <div class="three-col" id="reference-cards"></div>
+</div>
+
+</main>
+</div>
+
+<script>
+const COURSES = {
+  physics: {
+    name: "AP Physics 1",
+    color: "#4f8ef7",
+    examDate: "2026-05-06",
+    examDay: "Wednesday, May 6, 2026 (afternoon)",
+    units: [
+      "U1: Kinematics",
+      "U2: Force & Translational Dynamics",
+      "U3: Work, Energy & Power",
+      "U4: Linear Momentum",
+      "U5: Torque & Rotational Dynamics",
+      "U6: Energy & Momentum of Rotating Systems",
+      "U7: Oscillations",
+      "U8: Fluids"
+    ],
+    weights: [0.12, 0.20, 0.15, 0.12, 0.14, 0.12, 0.08, 0.07],
+    // Score cutoffs (min % to achieve each score)
+    cutoffs: { 5: 70, 4: 54, 3: 40, 2: 25, 1: 0 },
+    frqTypes: [
+      { id: "frq-math", label: "Mathematical Routines" },
+      { id: "frq-trans", label: "Translation Between Representations" },
+      { id: "frq-exp", label: "Experimental Design & Analysis" },
+      { id: "frq-qual", label: "Qualitative/Quantitative Translation" }
+    ],
+    examFormat: "40 MCQ (80 min, 50%) + 4 FRQ (100 min, 50%)",
+    frqNote: "1 of each type: Mathematical routines, Translation, Experimental design, Qualitative/quantitative"
+  },
+  stats: {
+    name: "AP Statistics",
+    color: "#3ecf8e",
+    examDate: "2026-05-07",
+    examDay: "Thursday, May 7, 2026 (afternoon)",
+    units: [
+      "U1: Exploring One-Variable Data",
+      "U2: Exploring Two-Variable Data",
+      "U3: Collecting Data",
+      "U4: Probability & Distributions",
+      "U5: Sampling Distributions",
+      "U6: Inference: Proportions",
+      "U7: Inference: Means",
+      "U8: Inference: Chi-Square",
+      "U9: Inference: Slopes"
+    ],
+    weights: [0.10, 0.10, 0.10, 0.12, 0.12, 0.15, 0.12, 0.10, 0.09],
+    cutoffs: { 5: 63, 4: 48, 3: 38, 2: 30, 1: 0 },
+    frqTypes: [
+      { id: "frq-collect", label: "Collecting Data" },
+      { id: "frq-explore", label: "Exploring Data" },
+      { id: "frq-prob", label: "Probability & Sampling Distributions" },
+      { id: "frq-inference", label: "Inference" },
+      { id: "frq-multi", label: "Multi-Skill (combines 2+ categories)" },
+      { id: "frq-invest", label: "Investigative Task (Part B)" }
+    ],
+    examFormat: "40 MCQ (90 min, 50%) + 6 FRQ (90 min, 50%)",
+    frqNote: "Part A: 5 questions (collecting data, exploring data, probability, inference, multi-skill). Part B: 1 investigative task."
+  },
+  precalc: {
+    name: "AP Precalculus",
+    color: "#9b72f7",
+    examDate: "2026-05-12",
+    examDay: "Tuesday, May 12, 2026 (morning)",
+    units: [
+      "U1: Polynomial & Rational Functions",
+      "U2: Exponential & Logarithmic Functions",
+      "U3: Trigonometric & Polar Functions"
+    ],
+    weights: [0.33, 0.34, 0.33],
+    cutoffs: { 5: 67, 4: 54, 3: 42, 2: 31, 1: 0 },
+    frqTypes: [
+      { id: "frq-func", label: "Function Concepts (Calculator)" },
+      { id: "frq-model-np", label: "Modeling Non-Periodic (Calculator)" },
+      { id: "frq-model-p", label: "Modeling Periodic (No Calculator)" },
+      { id: "frq-symbolic", label: "Symbolic Manipulations (No Calculator)" }
+    ],
+    examFormat: "MCQ + 4 FRQ",
+    frqNote: "FRQ 1: Function concepts (calc) · FRQ 2: Modeling non-periodic (calc) · FRQ 3: Modeling periodic (no calc) · FRQ 4: Symbolic manipulations (no calc)"
+  }
+};
+
+let state = {
+  course: "physics",
+  allEntries: { physics: [], stats: [], precalc: [] },
+  goal: 5,
+};
+
+// Helper: get entries for current course
+function entries() { return state.allEntries[state.course]; }
+
+let trendChartObj = null;
+
+// --- NAVIGATION ---
+function showPanel(id, btn) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("panel-" + id).classList.add("active");
+  if (btn) btn.classList.add("active");
+  if (id === "analytics") renderAnalytics();
+  if (id === "calendar") buildCalendar();
+  if (id === "goals") renderGoals();
+  if (id === "reference") renderReference();
+}
+
+function switchCourse(c, btn) {
+  state.course = c;
+  document.querySelectorAll(".course-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  populateUnitSelects();
+  updateSidebar();
+  renderAll();
+  // update type dropdown
+  populateTypeSelect();
+  // update calendar date
+  document.getElementById("examDate").value = COURSES[c].examDate;
+}
+
+function populateUnitSelects() {
+  const units = COURSES[state.course].units;
+  ["inp-unit", "wi-unit"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = units.map((u, i) => `<option value="${i}">${u}</option>`).join("");
+  });
+}
+
+function populateTypeSelect() {
+  const c = COURSES[state.course];
+  const el = document.getElementById("inp-type");
+  if (!el) return;
+  el.innerHTML = `<option value="mcq">MCQ</option>` +
+    c.frqTypes.map(t => `<option value="${t.id}">${t.label}</option>`).join("");
+}
+
+function updateSidebar() {
+  const c = COURSES[state.course];
+  const exam = new Date(c.examDate + "T12:00:00");
+  const now = new Date();
+  const days = Math.max(0, Math.ceil((exam - now) / 86400000));
+  document.getElementById("sidebar-days").textContent = days;
+  document.getElementById("sidebar-exam-date").textContent = c.examDay;
+}
+
+// --- PREDICTION ENGINE ---
+function scoreToBand(pct, cutoffs) {
+  if (pct >= cutoffs[5]) return 5;
+  if (pct >= cutoffs[4]) return 4;
+  if (pct >= cutoffs[3]) return 3;
+  if (pct >= cutoffs[2]) return 2;
+  return 1;
+}
+
+function gapToNext(pct, cutoffs) {
+  const levels = [cutoffs[3], cutoffs[4], cutoffs[5]];
+  for (let t of levels) { if (pct < t) return { gap: Math.ceil(t - pct), next: scoreToBand(t, cutoffs) }; }
+  return { gap: 0, next: 5 };
+}
+
+function isBorderline(pct, cutoffs) {
+  return [cutoffs[2], cutoffs[3], cutoffs[4], cutoffs[5]].some(t => Math.abs(pct - t) <= 4);
+}
+
+function computeWeightedScore() {
+  const c = COURSES[state.course];
+  const ents = entries();
+  if (!ents.length) return null;
+
+  // Recency weighting: based on actual date. Today = 1.0, 90+ days ago = 0.5, linear decay between.
+  const now = Date.now();
+  const DECAY_DAYS = 90;
+  function recencyWeight(e) {
+    const ageDays = (now - new Date(e.date).getTime()) / 86400000;
+    return Math.max(0.5, 1.0 - (ageDays / DECAY_DAYS) * 0.5);
+  }
+
+  const n = ents.length;
+  const byUnit = {};
+  ents.forEach(e => {
+    const w = parseFloat(e.sourceW) * recencyWeight(e);
+    if (!byUnit[e.unit]) byUnit[e.unit] = [];
+    byUnit[e.unit].push({ score: e.score, w, type: e.type });
+  });
+
+  // Split MCQ / FRQ
+  let mcqScores = [], frqScores = [];
+  ents.forEach(e => {
+    const w = parseFloat(e.sourceW) * recencyWeight(e);
+    if (e.type === "mcq") mcqScores.push({ s: e.score, w });
+    else frqScores.push({ s: e.score, w });
+  });
+
+  function wavg(arr) {
+    if (!arr.length) return null;
+    const sw = arr.reduce((a, b) => a + b.w, 0);
+    return arr.reduce((a, b) => a + b.s * b.w, 0) / sw;
+  }
+
+  // Unit-weighted overall
+  let num = 0, den = 0;
+  Object.keys(byUnit).forEach(u => {
+    const i = parseInt(u);
+    const arr = byUnit[u];
+    const sw = arr.reduce((a, b) => a + b.w, 0);
+    const avg = arr.reduce((a, b) => a + b.score * b.w, 0) / sw;
+    num += avg * c.weights[i];
+    den += c.weights[i];
+  });
+  let pct = den > 0 ? num / den : null;
+
+  // Blend with MCQ/FRQ 50/50 if we have both
+  const mcqAvg = wavg(mcqScores);
+  const frqAvg = wavg(frqScores);
+  if (mcqAvg !== null && frqAvg !== null) {
+    pct = mcqAvg * 0.5 + frqAvg * 0.5;
+  }
+
+  return pct !== null ? Math.round(pct) : null;
+}
+
+function confidence(n) { return Math.min(95, Math.round(40 + n * 3)); }
+
+// --- RENDER ALL ---
+function renderAll() {
+  updateSidebar();
+  renderDashboard();
+  renderEntryList();
+}
+
+function renderDashboard() {
+  const c = COURSES[state.course];
+  document.getElementById("dash-title").textContent = c.name;
+  document.getElementById("dash-sub").textContent = `Exam: ${c.examDay}`;
+  document.getElementById("entry-count").textContent = entries().length;
+
+  const ws = computeWeightedScore();
+  if (ws !== null) {
+    const band = scoreToBand(ws, c.cutoffs);
+    const conf = confidence(entries().length);
+    const { gap, next } = gapToNext(ws, c.cutoffs);
+    const border = isBorderline(ws, c.cutoffs);
+
+    document.getElementById("pred-score").textContent = band;
+    document.getElementById("pred-score").style.color = band >= 4 ? "var(--accent-green)" : band === 3 ? "var(--accent-amber)" : "var(--accent-red)";
+    document.getElementById("pred-pct").textContent = `${ws}% weighted avg`;
+    document.getElementById("pred-conf").textContent = conf + "%";
+    document.getElementById("pred-border").innerHTML = border
+      ? `<span class="badge badge-amber">Borderline ±4%</span>`
+      : `<span class="badge badge-green">Stable</span>`;
+    document.getElementById("pred-gap").textContent = gap > 0 ? `+${gap}%` : "Max";
+    document.getElementById("pred-gap-sub").textContent = gap > 0 ? `needed for a ${next}` : "You're at a 5";
+  } else {
+    ["pred-score","pred-conf","pred-gap"].forEach(id => document.getElementById(id).textContent = "—");
+    document.getElementById("pred-pct").textContent = "";
+    document.getElementById("pred-border").textContent = "";
+    document.getElementById("pred-gap-sub").textContent = "";
+  }
+  renderUnitMastery();
+  renderWeakAreas();
+  renderFRQBreakdown();
+}
+
+function unitAvg(unitIdx) {
+  const es = entries().filter(e => e.unit === unitIdx);
+  if (!es.length) return null;
+  return Math.round(es.reduce((s, e) => s + e.score * parseFloat(e.sourceW), 0) / es.length);
+}
+
+function renderUnitMastery() {
+  const c = COURSES[state.course];
+  const el = document.getElementById("unit-mastery-list");
+  const rows = c.units.map((u, i) => {
+    const avg = unitAvg(i);
+    const col = avg === null ? "var(--surface3)" : avg >= c.cutoffs[5] ? "var(--accent-green)" : avg >= c.cutoffs[4] ? "var(--accent-blue)" : avg >= c.cutoffs[3] ? "var(--accent-amber)" : "var(--accent-red)";
+    return `<div class="unit-row">
+      <div class="unit-name">${u}</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${avg || 0}%;background:${col}"></div></div>
+      <div class="unit-pct">${avg !== null ? avg + "%" : "—"}</div>
+    </div>`;
+  });
+  el.innerHTML = rows.join("") || `<div class="empty">No data yet.</div>`;
+}
+
+function renderWeakAreas() {
+  const c = COURSES[state.course];
+  const el = document.getElementById("weak-areas");
+  const scored = c.units.map((u, i) => ({ u, i, avg: unitAvg(i) }))
+    .filter(x => x.avg !== null).sort((a, b) => a.avg - b.avg);
+  if (!scored.length) { el.innerHTML = `<div class="empty">Log scores to identify weak areas.</div>`; return; }
+  el.innerHTML = scored.slice(0, Math.min(4, scored.length)).map(x => {
+    const cls = x.avg < c.cutoffs[3] ? "badge-red" : x.avg < c.cutoffs[4] ? "badge-amber" : "badge-blue";
+    return `<div class="unit-row">
+      <div class="unit-name">${x.u}</div>
+      <span class="badge ${cls}">${x.avg}%</span>
+    </div>`;
+  }).join("");
+}
+
+function renderFRQBreakdown() {
+  const c = COURSES[state.course];
+  const el = document.getElementById("frq-breakdown");
+  const colors = ["var(--accent-purple)", "var(--accent-blue)", "var(--accent-green)", "var(--accent-amber)", "var(--accent-red)", "#f07cc4"];
+  const frqEntries = entries().filter(e => e.type !== "mcq");
+  if (!frqEntries.length) {
+    el.style.gridTemplateColumns = "1fr";
+    el.innerHTML = `<div class="empty">Log FRQ scores to see skill breakdown.</div>`;
+    return;
+  }
+  const cols = Math.min(c.frqTypes.length, 4);
+  el.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  el.innerHTML = c.frqTypes.map((t, i) => {
+    const arr = frqEntries.filter(e => e.type === t.id);
+    const avg = arr.length ? Math.round(arr.reduce((s, e) => s + e.score, 0) / arr.length) : null;
+    return `<div class="frq-skill-card">
+      <div class="frq-skill-name">${t.label}</div>
+      <div class="frq-skill-val" style="color:${colors[i % colors.length]}">${avg !== null ? avg + "%" : "—"}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${arr.length} entr${arr.length === 1 ? "y" : "ies"}</div>
+    </div>`;
+  }).join("");
+}
+
+// --- LOG SCORE ---
+function logScore() {
+  const unitIdx = parseInt(document.getElementById("inp-unit").value);
+  const topic = document.getElementById("inp-topic").value.trim();
+  const scoreRaw = document.getElementById("inp-score").value;
+  const score = parseFloat(scoreRaw);
+  const sourceW = document.getElementById("inp-source").value;
+  const type = document.getElementById("inp-type").value;
+  const time = document.getElementById("inp-time").value;
+  const dateVal = document.getElementById("inp-date").value;
+  const entryDate = dateVal ? new Date(dateVal + "T12:00:00").toISOString() : new Date().toISOString();
+  if (scoreRaw === "" || isNaN(score) || score < 0 || score > 100) {
+    alert("Enter a valid score between 0 and 100."); return;
+  }
+  state.allEntries[state.course].push({ id: Date.now(), unit: unitIdx, topic, score, sourceW, type, time: time ? parseInt(time) : null, date: entryDate });
+  renderAll();
+  document.getElementById("inp-score").value = "";
+  document.getElementById("inp-topic").value = "";
+  document.getElementById("inp-time").value = "";
+  document.getElementById("inp-date").value = new Date().toISOString().split("T")[0];
+}
+
+function deleteEntry(id) {
+  state.allEntries[state.course] = state.allEntries[state.course].filter(e => e.id !== id);
+  renderAll();
+}
+
+function renderEntryList() {
+  const el = document.getElementById("entry-list");
+  const c = COURSES[state.course];
+  if (!entries().length) { el.innerHTML = `<div class="empty">No entries yet.</div>`; return; }
+  const typeLabel = (type) => {
+    if (type === "mcq") return "MCQ";
+    const ft = c.frqTypes.find(t => t.id === type);
+    return ft ? ft.label : type;
+  };
+  el.innerHTML = [...entries()].sort((a,b) => new Date(b.date) - new Date(a.date)).map(e => {
+    const avg = e.score;
+    const cls = avg >= (c.cutoffs[5]) ? "badge-green" : avg >= c.cutoffs[4] ? "badge-blue" : avg >= c.cutoffs[3] ? "badge-amber" : "badge-red";
+    const ageDays = Math.round((Date.now() - new Date(e.date).getTime()) / 86400000);
+    const recency = Math.max(0.5, 1.0 - (ageDays / 90) * 0.5);
+    const totalW = (parseFloat(e.sourceW) * recency).toFixed(2);
+    return `<div class="entry-row">
+      <span class="entry-date">${new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+      <span class="entry-unit">${c.units[e.unit]}</span>
+      <span class="entry-topic">${e.topic || typeLabel(e.type)}</span>
+      <span class="badge ${cls}">${e.score}%</span>
+      <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono)" title="source × recency weight">${totalW}×</span>
+      <button class="del-btn" onclick="deleteEntry(${e.id})">×</button>
+    </div>`;
+  }).join("");
+}
+
+// --- ANALYTICS ---
+function renderAnalytics() {
+  const ctx = document.getElementById("trendChart").getContext("2d");
+  if (trendChartObj) trendChartObj.destroy();
+  const labels = entries().map((_, i) => "#" + (i + 1));
+  const data = entries().map(e => Math.round(e.score * parseFloat(e.sourceW)));
+  const c = COURSES[state.course];
+  trendChartObj = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Weighted score",
+        data,
+        borderColor: c.color,
+        backgroundColor: c.color + "18",
+        tension: 0.35,
+        pointRadius: 4,
+        pointBackgroundColor: c.color,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 0, max: 100,
+          grid: { color: "rgba(255,255,255,0.06)" },
+          ticks: { color: "#555c6e", callback: v => v + "%" }
+        },
+        x: { grid: { display: false }, ticks: { color: "#555c6e" } }
+      }
+    }
+  });
+
+  // Inflation check
+  const warn = document.getElementById("inflation-warn");
+  if (data.length >= 6) {
+    const recent = data.slice(-3);
+    const older = data.slice(0, -3);
+    const ra = recent.reduce((a, b) => a + b, 0) / recent.length;
+    const oa = older.reduce((a, b) => a + b, 0) / older.length;
+    warn.style.display = (ra - oa > 10 && oa < 70) ? "block" : "none";
+  } else warn.style.display = "none";
+
+  // Unit chart
+  const uel = document.getElementById("unit-chart");
+  uel.innerHTML = c.units.map((u, i) => {
+    const avg = unitAvg(i);
+    const col = avg === null ? "var(--surface3)" : avg >= c.cutoffs[5] ? "var(--accent-green)" : avg >= c.cutoffs[4] ? "var(--accent-blue)" : avg >= c.cutoffs[3] ? "var(--accent-amber)" : "var(--accent-red)";
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="font-size:11px;color:var(--text2);min-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u}</div>
+      <div class="prog-bar" style="max-width:none;flex:1"><div class="prog-fill" style="width:${avg || 0}%;background:${col}"></div></div>
+      <div style="font-size:11px;color:var(--text2);min-width:32px;text-align:right;font-family:var(--font-mono)">${avg !== null ? avg + "%" : "—"}</div>
+    </div>`;
+  }).join("");
+}
+
+// --- CALENDAR ---
+function buildCalendar() {
+  const c = COURSES[state.course];
+  state.goal = parseInt(document.getElementById("goalSelect").value || "5");
+  const today = new Date();
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const weakUnits = c.units.map((u, i) => ({ u, i, avg: unitAvg(i), w: c.weights[i] }))
+    .sort((a, b) => {
+      const sa = a.avg === null ? -999 : a.avg;
+      const sb = b.avg === null ? -999 : b.avg;
+      return (sa - sb) - (a.w - b.w) * 20;
+    });
+
+  const examDt = new Date(c.examDate + "T12:00:00");
+  const daysLeft = Math.max(0, Math.ceil((examDt - today) / 86400000));
+  const isUrgent = daysLeft <= 14;
+
+  const grid = document.getElementById("cal-grid");
+  const dayHeaders = dayNames.map(d => `<div style="font-size:10px;color:var(--text3);text-align:center;padding:4px 0;font-family:var(--font-mono)">${d}</div>`).join("");
+  let days = "";
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    const wu = weakUnits[i % Math.max(weakUnits.length, 1)];
+    const frqType = c.frqTypes[i % c.frqTypes.length];
+    let tasks = [];
+    if (isWeekend) {
+      tasks = [
+        { label: `Full FRQ: ${frqType.label}`, cls: "task-frq" },
+        { label: "Timed MCQ set (20 Q)", cls: "task-drill" },
+        { label: `Review ${wu ? wu.u.split(":")[0] : "weakest unit"}`, cls: "task-review" }
+      ];
+    } else if (isUrgent) {
+      tasks = [
+        { label: `${wu ? wu.u.split(":")[0] : "Weak unit"}: targeted drill`, cls: "task-review" },
+        { label: frqType.label + " practice", cls: "task-frq" }
+      ];
+    } else {
+      tasks = [
+        { label: `Review: ${wu ? wu.u.split(":")[0] : "Unit"}`, cls: "task-review" },
+        { label: `Concept reading`, cls: "task-drill" }
+      ];
+    }
+    days += `<div class="cal-day ${isWeekend ? "cal-weekend" : ""}">
+      <div class="cal-day-hdr">${dayNames[d.getDay()]} ${d.getMonth() + 1}/${d.getDate()}</div>
+      ${tasks.map(t => `<div class="cal-task ${t.cls}">${t.label}</div>`).join("")}
+    </div>`;
+  }
+  grid.innerHTML = dayHeaders + days;
+  renderReadiness();
+}
+
+function renderReadiness() {
+  const c = COURSES[state.course];
+  const el = document.getElementById("readiness-list");
+  el.innerHTML = c.units.map((u, i) => {
+    const avg = unitAvg(i);
+    let status, cls;
+    if (avg === null) { status = "Not tested"; cls = "badge-blue"; }
+    else if (avg >= c.cutoffs[5]) { status = "Ready"; cls = "badge-green"; }
+    else if (avg >= c.cutoffs[4]) { status = "On track"; cls = "badge-blue"; }
+    else if (avg >= c.cutoffs[3]) { status = "Needs work"; cls = "badge-amber"; }
+    else { status = "At risk"; cls = "badge-red"; }
+    const col = avg === null ? "var(--surface3)" : avg >= c.cutoffs[5] ? "var(--accent-green)" : avg >= c.cutoffs[4] ? "var(--accent-blue)" : avg >= c.cutoffs[3] ? "var(--accent-amber)" : "var(--accent-red)";
+    return `<div class="readiness-row">
+      <div class="unit-name" style="flex:1">${u}</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${avg || 0}%;background:${col}"></div></div>
+      <span class="badge ${cls}">${status}</span>
+    </div>`;
+  }).join("");
+}
+
+// --- GOALS ---
+function renderGoals() {
+  const c = COURSES[state.course];
+  const target = parseInt(document.getElementById("targetScore").value);
+  const ws = computeWeightedScore();
+  const el = document.getElementById("goal-output");
+  if (ws === null) { el.innerHTML = `<div class="empty">Log data first.</div>`; return; }
+  const current = scoreToBand(ws, c.cutoffs);
+  const needed = c.cutoffs[target] || 70;
+  const gap = Math.max(0, needed - ws);
+  const col = gap === 0 ? "var(--accent-green)" : gap <= 8 ? "var(--accent-amber)" : "var(--accent-red)";
+  const currW = Math.min(ws, 100);
+  const gapW = Math.min(gap, 100 - currW);
+  el.innerHTML = `<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px">
+    <span style="font-size:36px;font-weight:700;font-family:var(--font-display);color:${current >= 4 ? "var(--accent-green)" : current === 3 ? "var(--accent-amber)" : "var(--accent-red)"}">${current}</span>
+    <span style="font-size:18px;color:var(--text3)">→</span>
+    <span style="font-size:36px;font-weight:700;font-family:var(--font-display)">${target}</span>
+  </div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px">
+    You need <strong style="color:${col}">${gap}%</strong> more to reach a ${target}. Current: ${ws}% · Target threshold: ${needed}%.
+  </div>
+  <div class="gap-bar">
+    <div class="gap-seg-curr" style="flex:${currW}"></div>
+    <div class="gap-seg-gap" style="flex:${gapW}"></div>
+    <div class="gap-seg-rest" style="flex:${Math.max(0, 100 - currW - gapW)}"></div>
+  </div>
+  <div style="font-size:10px;color:var(--text3);display:flex;gap:14px;margin-top:6px;font-family:var(--font-mono)">
+    <span style="color:var(--accent-blue)">■ you (${ws}%)</span>
+    <span style="color:var(--accent-amber)">■ gap (${gap}%)</span>
+  </div>`;
+}
+
+function runWhatIf() {
+  const c = COURSES[state.course];
+  const unitIdx = parseInt(document.getElementById("wi-unit").value);
+  const delta = parseFloat(document.getElementById("wi-delta").value) || 10;
+  const el = document.getElementById("wi-result");
+  if (!entries().length) {
+    el.style.display = "block";
+    el.innerHTML = `<div class="empty">Log data first.</div>`;
+    return;
+  }
+  const original = computeWeightedScore();
+  const saved = state.allEntries[state.course];
+  state.allEntries[state.course] = saved.map(e => e.unit === unitIdx ? { ...e, score: Math.min(100, e.score + delta) } : e);
+  const projected = computeWeightedScore();
+  state.allEntries[state.course] = saved;
+  if (original === null || projected === null) { el.style.display = "none"; return; }
+  const ob = scoreToBand(original, c.cutoffs);
+  const nb = scoreToBand(projected, c.cutoffs);
+  const improved = nb > ob;
+  el.style.display = "block";
+  el.innerHTML = `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">If <strong style="color:var(--text)">${c.units[unitIdx]}</strong> improves by <strong style="color:var(--accent-blue)">${delta}%</strong>:</div>
+    <div style="display:flex;gap:20px;align-items:center">
+      <div style="text-align:center"><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">CURRENT</div><div style="font-size:32px;font-weight:700;font-family:var(--font-display)">${ob}</div><div style="font-size:11px;color:var(--text3)">${original}%</div></div>
+      <div style="font-size:20px;color:var(--text3)">→</div>
+      <div style="text-align:center"><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">PROJECTED</div><div style="font-size:32px;font-weight:700;font-family:var(--font-display);color:${improved ? "var(--accent-green)" : nb === ob ? "var(--accent-blue)" : "var(--accent-red)"}">${nb}</div><div style="font-size:11px;color:var(--text3)">${projected}%</div></div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:${improved ? "var(--accent-green)" : "var(--text2)"}">
+      ${improved ? "Score band improves!" : nb === ob ? "Weighted score increases but band stays the same." : "No change."}
+    </div>`;
+}
+
+// --- SCORE REFERENCE ---
+function renderReference() {
+  const el = document.getElementById("reference-cards");
+  const courseOrder = ["physics", "stats", "precalc"];
+  el.innerHTML = courseOrder.map(key => {
+    const c = COURSES[key];
+    const bands = [5, 4, 3, 2, 1];
+    const bandRows = bands.map(b => {
+      const min = c.cutoffs[b];
+      const max = b < 5 ? c.cutoffs[b + 1] - 1 : 100;
+      const cls = b === 5 ? "badge-green" : b === 4 ? "badge-blue" : b === 3 ? "badge-amber" : b === 2 ? "badge-red" : "";
+      return `<tr>
+        <td><span class="badge ${cls}" style="font-size:12px;padding:3px 10px">${b}</span></td>
+        <td style="color:var(--text2)">${b === 5 ? "≥" + min + "%" : b === 1 ? "<" + c.cutoffs[2] + "%" : min + "–" + max + "%"}</td>
+      </tr>`;
+    }).join("");
+    const frqRows = c.frqTypes.map(t => `<li style="margin-bottom:3px;color:var(--text2)">${t.label}</li>`).join("");
+    return `<div class="card" style="border-color:${c.color}33">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${c.color}"></div>
+        <div style="font-family:var(--font-display);font-size:15px;font-weight:600">${c.name}</div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">EXAM DATE</div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:14px">${c.examDay}</div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px">SCORE CUTOFFS</div>
+      <table class="bands-table" style="margin-bottom:14px"><thead><tr><th>Score</th><th>% needed</th></tr></thead><tbody>${bandRows}</tbody></table>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px">FRQ TYPES</div>
+      <ul style="list-style:none;font-size:12px;padding:0">${frqRows}</ul>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">${c.frqNote}</div>
+    </div>`;
+  }).join("");
+}
+
+// --- INIT ---
+function init() {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const dateInput = document.getElementById("inp-date");
+  dateInput.value = todayStr;
+  dateInput.max = todayStr;
+  document.getElementById("examDate").value = COURSES[state.course].examDate;
+  populateUnitSelects();
+  populateTypeSelect();
+  updateSidebar();
+  buildCalendar();
+  renderReference();
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
