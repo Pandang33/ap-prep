@@ -640,7 +640,7 @@ function computeWeightedScore() {
 function confidence(n) { return Math.min(95, Math.round(40 + n * 3)); }
 
 // --- RENDER ALL ---
-function renderAll() {
+function _renderAll() {
   updateSidebar();
   renderDashboard();
   renderEntryList();
@@ -1067,13 +1067,12 @@ function submitSignup() {
 
 function loginSuccess(username, savedData) {
   currentUser = username;
-  // Restore saved entries if any
   if (savedData.allEntries) state.allEntries = savedData.allEntries;
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("appShell").style.display = "flex";
   document.getElementById("sidebar-username").textContent = username;
   document.getElementById("sidebar-avatar").textContent = username[0].toUpperCase();
-  renderAll();
+  init();
 }
 
 function logout() {
@@ -1096,10 +1095,9 @@ function saveUserData() {
   }
 }
 
-// Auto-save on every renderAll
-const _origRenderAll = renderAll;
+// Auto-save wrapper
 function renderAll() {
-  _origRenderAll();
+  _renderAll();
   saveUserData();
 }
 
@@ -1117,7 +1115,7 @@ function init() {
   renderReference();
   renderAll();
 }
-init();
+// Don't call init() until user logs in - loginSuccess calls it
 </script>
 </body>
 </html>
